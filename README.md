@@ -95,3 +95,26 @@ By the end of this lab, you should be able to say:
 ### Optional
 
 1. [Flutter Web Chatbot](./lab/tasks/optional/task-1.md)
+
+## Deploy
+
+This section explains how to deploy the Telegram bot alongside the backend on your VM.
+
+### Prerequisites
+
+- Docker and Docker Compose installed on VM
+- `.env.docker.secret` configured with required variables
+- Telegram bot token from @BotFather
+- LLM API key (OpenRouter or Qwen Code API)
+
+### Deploy Commands
+
+```bash
+cd ~/se-toolkit-lab-7
+docker compose --env-file .env.docker.secret up --build -d
+docker compose --env-file .env.docker.secret ps
+```
+
+### Verify in Telegram
+
+Send `/start`, `/health`, or ask `what labs are available?`
