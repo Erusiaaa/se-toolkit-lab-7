@@ -67,30 +67,67 @@ async def telegram_mode() -> int:
     except ImportError:
         print("Error: aiogram not installed", file=sys.stderr)
         return 1
+    
     bot = Bot(token=settings.bot_token)
     dp = Dispatcher()
+    
     @dp.message(Command("start"))
     async def cmd_start(message: types.Message):
         result = await run_command("/start")
-        keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="Health", callback_data="health"), InlineKeyboardButton(text="Labs", callback_data="labs")], [InlineKeyboardButton(text="Scores lab-01", callback_data="scores_lab-01")]])
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🏥 Health", callback_data="health"),
+             InlineKeyboardButton(text="📚 Labs", callback_data="labs")],
+            [InlineKeyboardButton(text="📊 Scores lab-01", callback_data="scores_lab-01"),
+             InlineKeyboardButton(text="📊 Scores lab-04", callback_data="scores_lab-04")],
+            [InlineKeyboardButton(text="👥 Top Learners", callback_data="top_learners")],
+        ])
         await message.answer(result, reply_markup=keyboard)
+    
     @dp.message(Command("help"))
     async def cmd_help(message: types.Message):
-        await message.answer(await run_command("/help"))
+        result = await run_command("/help")
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🏥 Health", callback_data="health"),
+             InlineKeyboardButton(text="📚 Labs", callback_data="labs")],
+            [InlineKeyboardButton(text="📊 Scores", callback_data="scores_lab-01")],
+        ])
+        await message.answer(result, reply_markup=keyboard)
+    
     @dp.message(Command("health"))
     async def cmd_health(message: types.Message):
         await message.answer(await run_command("/health"))
+    
     @dp.message(Command("labs"))
     async def cmd_labs(message: types.Message):
         await message.answer(await run_command("/labs"))
+    
     @dp.message(Command("scores"))
     async def cmd_scores(message: types.Message):
         args = {"lab": message.text.split(maxsplit=1)[1]} if len(message.text.split()) > 1 else None
         await message.answer(await run_command("/scores", args))
+    
+    @dp.callback_query(lambda c: c.data)
+    async def process_callback_query(callback_query: types.CallbackQuery):
+        data = callback_query.data
+        if data == "health":
+            result = await run_command("/health")
+        elif data == "labs":
+            result = await run_command("/labs")
+        elif data.startswith("scores_"):
+            lab = data.replace("scores_", "")
+            result = await run_command("/scores", {"lab": lab})
+        elif data == "top_learners":
+            result = await run_intent_router("who are the top 5 students in lab-01")
+        else:
+            result = "Unknown action"
+        await callback_query.message.answer(result)
+        await callback_query.answer()
+    
     @dp.message()
     async def handle_message(message: types.Message):
         result = await run_intent_router(message.text)
         await message.answer(result)
+    
     print("Bot started...")
     await dp.start_polling(bot)
     return 0
