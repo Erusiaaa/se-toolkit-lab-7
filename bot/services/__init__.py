@@ -1,2 +1,4 @@
 from .lms_client import LmsClient
-__all__ = ["LmsClient"]
+from .llm_client import LLMClient
+
+__all__ = ["LmsClient", "LLMClient"]
