@@ -46,25 +46,32 @@ class IntentRouter:
         return {"lab": lab, "pass_rates": rates}
     
     async def _call_get_learners(self, **kwargs):
-        return {"learners": [], "count": 0}
+        learners = await self.lms_client.get_learners()
+        return {"learners": learners, "count": len(learners)}
     
     async def _call_get_groups(self, lab: str, **kwargs):
-        return {"lab": lab, "groups": []}
+        groups = await self.lms_client.get_groups(lab)
+        return {"lab": lab, "groups": groups}
     
     async def _call_get_top_learners(self, lab: str, limit: int = 5, **kwargs):
-        return {"lab": lab, "top_learners": [], "limit": limit}
+        learners = await self.lms_client.get_top_learners(lab, limit)
+        return {"lab": lab, "top_learners": learners, "limit": limit}
     
     async def _call_get_completion_rate(self, lab: str, **kwargs):
-        return {"lab": lab, "completion_rate": 0}
+        rate = await self.lms_client.get_completion_rate(lab)
+        return {"lab": lab, "completion_rate": rate}
     
     async def _call_get_timeline(self, lab: str, **kwargs):
-        return {"lab": lab, "timeline": []}
+        timeline = await self.lms_client.get_timeline(lab)
+        return {"lab": lab, "timeline": timeline}
     
     async def _call_get_scores(self, lab: str, **kwargs):
-        return {"lab": lab, "scores": []}
+        scores = await self.lms_client.get_scores(lab)
+        return {"lab": lab, "scores": scores}
     
     async def _call_trigger_sync(self, **kwargs):
-        return {"status": "sync triggered", "new_records": 0, "total_records": 0}
+        result = await self.lms_client.trigger_sync()
+        return result
     
     async def route(self, user_message: str) -> str:
         messages = [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": user_message}]
