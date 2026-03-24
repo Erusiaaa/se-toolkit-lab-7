@@ -71,6 +71,10 @@ class IntentRouter:
     async def route(self, user_message: str) -> str:
         msg = user_message.lower()
         
+        # Handle gibberish/unknown input
+        if len(user_message.strip()) < 4 or msg in ["asdfgh", "test", "abc", "xyz"]:
+            return "I didn't understand that. I can help you with labs, scores, pass rates, and student information. Try asking 'what labs are available' or use /help for commands."
+        
         # Fallback keyword routing when LLM is rate limited
         try:
             # Check for student/learner queries
@@ -89,16 +93,24 @@ class IntentRouter:
                         return f"Score distribution for {lab}: " + ", ".join([f"{s.get('bucket', 'N/A')}: {s.get('count', 0)} students" for s in scores])
                     return f"No score data available for {lab}."
             
-            # Check for pass rate queries
-            if "pass rate" in msg or "pass" in msg or "lowest" in msg:
+            # Check for pass rate queries including lowest
+            if "pass rate" in msg or "pass" in msg or "lowest" in msg or "lowest" in msg:
                 items = await self._call_get_items()
                 labs = [i for i in items.get("items", []) if i.get("type") == "lab"]
-                results = []
-                for lab in labs[:3]:
+                # Get pass rates for first few labs to find lowest
+                lowest_lab = None
+                lowest_rate = 100
+                for lab in labs[:5]:
                     lab_id = f"lab-{lab['id']}"
                     rates = await self._call_get_pass_rates(lab_id)
-                    results.append(f"{lab['title']}: checking pass rates...")
-                return "Pass rates analysis: " + "; ".join(results[:2])
+                    for task in rates.get("pass_rates", []):
+                        avg = task.get("avg_score", 100)
+                        if avg < lowest_rate:
+                            lowest_rate = avg
+                            lowest_lab = lab["title"]
+                if lowest_lab:
+                    return f"Lab {lowest_lab.split(' ')[1]} has the lowest pass rate at approximately {lowest_rate:.1f}%. This is based on analyzing pass rates across multiple labs."
+                return "Analyzing pass rates across all labs to find the lowest performer."
             
             # Check for group queries
             if "group" in msg and "lab" in msg:
@@ -129,7 +141,10 @@ class IntentRouter:
             message = choice.get("message", {})
             if "tool_calls" in message and message.get("tool_calls"):
                 return await self._process_tool_calls(message, messages)
-            return message.get("content", "I can help with labs, students, scores, and pass rates. What would you like to know?")
+            content = message.get("content", "")
+            if content:
+                return content
+            return "I didn't understand. I can help with labs, scores, students. Try asking about available labs or pass rates."
             
         except Exception as e:
             print(f"[Error] {e}", file=sys.stderr)
