@@ -3,7 +3,7 @@
     // Direnv support
     "mkhl.direnv",
     
-    // Nix language support
+    // Nix language support.
     "jnoortheen.nix-ide",
     
     // Python language support.
